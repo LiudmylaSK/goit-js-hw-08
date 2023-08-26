@@ -1,38 +1,42 @@
 import throttle from 'lodash.throttle';
 
-const emailInput = document.querySelector('input[name="email"]');
-const messageTextarea = document.querySelector('textarea[name="message"]');
-const feedbackForm = document.querySelector('.feedback-form');
+const { email: emailInput, message: messageTextarea } =
+  document.querySelector('.feedback-form');
 
-const storedState = JSON.parse(localStorage.getItem('feedback-form-state'));
-if (storedState) {
-  emailInput.value = storedState.email;
-  messageTextarea.value = storedState.message;
-}
+const currentState = JSON.parse(
+  localStorage.getItem('feedback-form-state')
+) || { email: '', message: '' };
 
-const updateLocalStorage = throttle(function () {
-  const currentState = {
-    email: emailInput.value,
-    message: messageTextarea.value,
-  };
+emailInput.value = currentState.email;
+messageTextarea.value = currentState.message;
+
+function saveToLocalStorage() {
   localStorage.setItem('feedback-form-state', JSON.stringify(currentState));
   console.log('Saved to local storage:', currentState);
-}, 500);
+}
 
-emailInput.addEventListener('input', updateLocalStorage);
-messageTextarea.addEventListener('input', updateLocalStorage);
+const throttledSave = throttle(saveToLocalStorage, 500);
 
-feedbackForm.addEventListener('submit', function (event) {
+function handleInputChange(event) {
+  const { name, value } = event.target;
+  if (name === 'email' || name === 'message') {
+    currentState[name] = value;
+    throttledSave();
+  }
+}
+
+emailInput.addEventListener('input', handleInputChange);
+messageTextarea.addEventListener('input', handleInputChange);
+
+const feedbackForm = document.querySelector('.feedback-form');
+feedbackForm.addEventListener('submit', event => {
   event.preventDefault();
-
-  const currentState = {
+  const submittedState = {
     email: emailInput.value,
     message: messageTextarea.value,
   };
-
   emailInput.value = '';
   messageTextarea.value = '';
   localStorage.removeItem('feedback-form-state');
-
-  console.log('Form submitted with state:', currentState);
+  console.log('Form submitted with state:', submittedState);
 });
